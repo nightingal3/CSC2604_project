@@ -170,18 +170,22 @@ def five_grams_read():
 
 
 def common_context(syn_list, context_set_list, context_dict_counter):
-    contexts = set.intersection(context_set_list)
+    contexts = set.intersection(*context_set_list)
     rel_syn_usage = dict.fromkeys(syn_list)
     
     for word in syn_list:
-	for context in contexts:	
-	    rel_syn_usage[word] += context_dict_counter[word][context]
+	for context in contexts:
+	    if rel_syn_usage[word]:	
+	        rel_syn_usage[word] += context_dict_counter[word][context]
+	    else:
+		rel_syn_usage[word] = context_dict_counter[word][context]
 
     return rel_syn_usage
 		
 
 if __name__ == "__main__":
     #rahmGetSyn()
-    five_grams_read()
+    #five_grams_read()
     #print(get_synonyms("test.txt"))
-
+    rel = common_context(["w1", "w2"],[set(["a", "b", "c"]), set(["b", "d", "e"])], {"w1": {"a":3, "b":2, "c":1}, "w2": {"b": 4, "d": 2, "e": 4}})
+    print(rel)
