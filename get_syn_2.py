@@ -72,9 +72,11 @@ def five_grams_read():
 
     # dict of each header synonym, where the value will be a set of contexts
     context_dict = {}
+    context_dict_counter = {}
     # initialize with syn_dict keys
     for key in syn_dict:
         context_dict[key] = set([])
+	context_dict_counter[key] = {}
 
     wnet_pos = {
 
@@ -148,6 +150,11 @@ def five_grams_read():
 							print(final_context)
         					# update the set at the correct key-value
         						context_dict[word[0]].add(final_context)
+                                                # update the counter 
+							if final_context in context_dict_counter[word[0]]:
+							    context_dict_counter[word[0]] += 1
+							else:
+							    context_dict_counter[word[0]][final_context] = 1
 							print(context_dict[word[0]])
 						
 		print(context_dict)
@@ -155,10 +162,23 @@ def five_grams_read():
     pickle.dump(context_dict, f, 2)
     f.close()
 
+    f = open("context_dict_counter.p", "w")
+    pickle.dump(context_dict_counter, f, 2)
+    f.close()
 
-def common_context(w1, w2, context_dict):
-	return context_dict[w1].intersection(context_dict[w2])
+    return context_dict_counter
 
+
+def common_context(syn_list, context_set_list, context_dict_counter):
+    contexts = set.intersection(context_set_list)
+    rel_syn_usage = dict.fromkeys(syn_list)
+    
+    for word in syn_list:
+	for context in contexts:	
+	    rel_syn_usage[word] += context_dict_counter[word][context]
+
+    return rel_syn_usage
+		
 
 if __name__ == "__main__":
     #rahmGetSyn()
