@@ -67,9 +67,10 @@ def five_grams_read():
 	
     # import synonyms
     syn_file = open("syn_dict.pickle", 'rb')
-    syn_dict = pickle.load(syn_file)
+    syn_dict_0 = pickle.load(syn_file)
     syn_file.close()
-
+    syn_dict = syn_dict_0["happy"]
+    
     # dict of each header synonym, where the value will be a set of contexts
     context_dict = {}
     context_dict_counter = {}
@@ -103,7 +104,7 @@ def five_grams_read():
 	# iterate over each file in the 5gram directory, with checking if it is a 5 gram file.
     for fname in os.listdir("./../../../data/downloads/google_ngrams/5/"):
         print("opening %s" % fname)
-        if fname[:6] != "google":
+        if fname[:6] != "google" or fname[-2:] != "bl":
             continue
         full_path = os.path.join("./../../../data/downloads/google_ngrams/5/", fname)
         curr_file = open(full_path,'r')
@@ -121,9 +122,9 @@ def five_grams_read():
         		# not sure if i should lemmatize the target word tbh
 			if len(line) <= 4:
 			    continue
-        		word = line[4].lower().split("_") # splits potential POS tagging
+        		word = line[0].lower().split("_") # splits potential POS tagging
         		#[0] element should be the word without any POS tagging, regardless of
-        		if word[0] in context_dict:
+        		if word[0] in syn_dict:
         			""" tests for a word to be a useful context word,  not necessarily in order """
         		# first must be lemmatize
         		# is alphabetical only
@@ -131,7 +132,7 @@ def five_grams_read():
         		# using stop word set for the above^
 
         		# iterate over every context word
-				print(word[0])
+				
         			for context in [line[1], line[2], line[3], line[4]]:
         			#pos split
         				new_context = context.split("_")
@@ -152,11 +153,11 @@ def five_grams_read():
         						context_dict[word[0]].add(final_context)
                                                 # update the counter 
 							if final_context in context_dict_counter[word[0]]:
-							    context_dict_counter[word[0]] += 1
+							    context_dict_counter[word[0]][final_context] += 1
 							else:
 							    context_dict_counter[word[0]][final_context] = 1
 							print(context_dict[word[0]])
-						
+													
 		print(context_dict)
     f = open("context_dict.p", "w")
     pickle.dump(context_dict, f, 2)
@@ -185,7 +186,7 @@ def common_context(syn_list, context_set_list, context_dict_counter):
 
 if __name__ == "__main__":
     #rahmGetSyn()
-    #five_grams_read()
+    five_grams_read()
     #print(get_synonyms("test.txt"))
-    rel = common_context(["w1", "w2"],[set(["a", "b", "c"]), set(["b", "d", "e"])], {"w1": {"a":3, "b":2, "c":1}, "w2": {"b": 4, "d": 2, "e": 4}})
-    print(rel)
+    #rel = common_context(["w1", "w2"],[set(["a", "b", "c"]), set(["b", "d", "e"])], {"w1": {"a":3, "b":2, "c":1}, "w2": {"b": 4, "d": 2, "e": 4}})
+    #print(rel)
