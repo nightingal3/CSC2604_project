@@ -3,6 +3,8 @@ import pickle
 import os
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import stopwords
+from collections import OrderedDict
+from scipy.stats import pearsonr
 
 def get_synonyms(filename): #This is meant to be used on "English Synonyms and Antonyms" by James Champlin Fernald
     f = open(filename, "r")
@@ -67,9 +69,9 @@ def five_grams_read():
 	
     # import synonyms
     syn_file = open("syn_dict.pickle", 'rb')
-    syn_dict_0 = pickle.load(syn_file)
+    syn_dict = pickle.load(syn_file)
     syn_file.close()
-    syn_dict = syn_dict_0["happy"]
+    
     
     # dict of each header synonym, where the value will be a set of contexts
     context_dict = {}
@@ -104,7 +106,7 @@ def five_grams_read():
 	# iterate over each file in the 5gram directory, with checking if it is a 5 gram file.
     for fname in os.listdir("./../../../data/downloads/google_ngrams/5/"):
         print("opening %s" % fname)
-        if fname[:6] != "google" or fname[-2:] != "bl":
+        if fname[:6] != "google":
             continue
         full_path = os.path.join("./../../../data/downloads/google_ngrams/5/", fname)
         curr_file = open(full_path,'r')
@@ -158,7 +160,7 @@ def five_grams_read():
 							    context_dict_counter[word[0]][final_context] = 1
 							print(context_dict[word[0]])
 													
-		print(context_dict)
+	
     f = open("context_dict.p", "w")
     pickle.dump(context_dict, f, 2)
     f.close()
@@ -167,10 +169,14 @@ def five_grams_read():
     pickle.dump(context_dict_counter, f, 2)
     f.close()
 
-    return context_dict_counter
+   
 
+def common_context(syn_list, context_set_list):
 
-def common_context(syn_list, context_set_list, context_dict_counter):
+    f = open("context_dict_counter.p", "rb")
+    context_dict_counter = pickle.load(f)
+    f.close()
+    
     contexts = set.intersection(*context_set_list)
     rel_syn_usage = dict.fromkeys(syn_list)
     
@@ -179,14 +185,48 @@ def common_context(syn_list, context_set_list, context_dict_counter):
 	    if rel_syn_usage[word]:	
 	        rel_syn_usage[word] += context_dict_counter[word][context]
 	    else:
-		rel_syn_usage[word] = context_dict_counter[word][context]
-
+		try:
+		    rel_syn_usage[word] = context_dict_counter[word][context]
+		except KeyError:
+		    rel_syn_usage[word] = 0
     return rel_syn_usage
 		
-
+def calc_pearson_r(rel_syn_usage, mode):
+    rel_syn_usage = OrderedDict(rel_syn_usage)
+    value = None
+    rel_usage = [x[1] for x in rel_syn_usage.items()]
+    print(rel_usage)
+    if mode == "length":
+	value = [len(syn) for syn in rel_syn_usage]
+        print(value)
+        return pearsonr(value, rel_usage)
+    else:
+	return
+    
 if __name__ == "__main__":
     #rahmGetSyn()
+
+    print(calc_pearson_r({"blithesome":210, "blissful":960, "blessed":30404, "blithe":198}, "length"))
+    assert False
+
     five_grams_read()
     #print(get_synonyms("test.txt"))
     #rel = common_context(["w1", "w2"],[set(["a", "b", "c"]), set(["b", "d", "e"])], {"w1": {"a":3, "b":2, "c":1}, "w2": {"b": 4, "d": 2, "e": 4}})
     #print(rel)
+    f = open("syn_dict.pickle", "rb")
+    syn_dict = pickle.load(f)
+    f.close()
+    
+    g = open("context_dict.p", "rb")
+    context_dict = pickle.load(g)
+    g.close()
+    #print(syn_dict)
+    res = open("logging.txt", "w")    
+    for syn in syn_dict:
+	syn_list = [x for x in syn_dict[syn]]	
+        print(syn_list)
+	context_set_list = []
+        for common_syn in syn_list:
+	    context_set_list.append(context_dict[common_syn])
+        print(context_set_list)    	
+	res.write(str(common_context(syn_list, context_set_list)))
